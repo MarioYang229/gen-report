@@ -148,12 +148,14 @@ def build_prompt(member_markdowns: List[str], examples_block: str) -> str:
         "Summarize achievements, ongoing work, issues/risks, metrics, and next week plan. Keep factual, merge duplicates, and preserve important numbers.\n"
     )
     instructions = (
-        "Format sections based on projects' name."
-        "Plz try to keep projects consistent between examples and new report."
-        "'BONY觸控一體機','得鑫螺絲','得鑫螺絲HMI','EBONY觸控一體機'... 都屬於'螺絲案'的一部份。"
-        "'Resymot', 'Resymot GUI', 'iMotion-XYZ控制器'... 都屬於'iMotion-3dof'的一部份。"
-        "'育成計畫', '新人訓練'... 都屬於'教育訓練'的一部份。"
-        "Use bullet points; group similar items."
+        "use chinese(zh-TW);"
+        "不需要保留組員名稱"
+        "組員報告中，項目列表清單(list)的最上級是專案名稱，依照專案來整理報告。"
+        "若組員報告的清單中出現 '以前完成:' 或 'done:'... 時，代表是很久以前完成的，忽視他的子項目。"
+        " '## Holding'標題底下的段落(paragraphs)代表被暫緩的工作項目，忽視整個段落。"
+        "不需要標註是已完成或進行中，組員會自行標註。只需要彙整組員的報告內容。"
+        "保留組員報告內容中，項目間的縮排（縮排為2個半型空格)關係，最多可以用到3層縮排。"
+        "不要用'、'去分隔許多工作內容，用換行或項目清單(list)的方式呈現。"
     )
     input_block = "\n\n".join(
         f"<REPORT index={i}>\n{txt}\n</REPORT>" for i, txt in enumerate(member_markdowns, 1)
