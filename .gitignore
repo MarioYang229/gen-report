@@ -209,3 +209,6 @@ __marimo__/
 **/*pb2*.py
 
 department_report.md
+*.exe
+*.bin
+gen_*

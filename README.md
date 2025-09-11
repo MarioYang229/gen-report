@@ -4,11 +4,7 @@ CLI tool to consolidate individual weekly member reports (Word / Markdown) into 
 
 ## Features
 
-* Parse member report files named like: `{member_name}工作報告-YYYYMMDD.docx|doc|md`.
-* Convert `.docx` to Markdown using `mammoth`.
-* Optional examples folder with both historical member reports and an existing team report (file name contains `之工作報告`). These are packaged into few-shot examples.
-* Builds a structured prompt and calls a configured model (default `gemini/gemini-1.5-flash`, changeable) through `litellm`.
-* Outputs a consolidated Markdown report with standardized sections.
+check [use_cases.md](docs/use_cases.md) for details.
 
 ## Environment
 
@@ -25,15 +21,23 @@ You can also use: `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `AZUR
 ## Usage
 
 ```bash
-gen-report --source ./this_week -e ./history1 -e ./history2 --out dept_report_20240821.md \
+uv run python -m gen_report -h
+uv run python -m gen_report --source ./this_week --examples ./history1 -e ./history2 --out dept_report_20240821.md \
 	--model gemini/gemini-1.5-flash
 ```
 
 Dry run (print prompt only, no LLM call):
 
 ```bash
-gen-report --source ./this_week -e ./history1 -e ./history2 --dry-run
-gen-report --source ./this_week -e ./history1 --dry-run
+uv run python -m gen_report -s ./this_week -e ./history1 -e ./history2 --dry-run
+uv run python -m gen_report -s ./this_week -e ./history1 --dry-run
+```
+
+### build(not supported yet)
+
+```bash
+uv run nuitka --onefile --assume-yes-for-downloads src/gen_report # take a long time
+./gen_report.exe -h
 ```
 
 ## Folder Layout Expectations
@@ -57,5 +61,5 @@ history2/
 Run locally without install:
 
 ```bash
-python -m gen_report --source ./this_week --dry-run
+uv run python -m gen_report -s ./this_week --dry-run
 ```
