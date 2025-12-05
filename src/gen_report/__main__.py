@@ -272,7 +272,14 @@ async def call_llm(model: str, prompt: str, max_tokens: int = 2000) -> Union[str
                 return 0.5
             return max(0.0, min(1.0, t))
 
+        def _parse_model() -> str:
+            val = os.getenv("MODEL")
+            if val is None:
+                return model
+            return val
+
         temperature = _parse_temperature()
+        model = _parse_model()
 
         resp: Any = await acompletion(
             temperature=temperature,
@@ -386,4 +393,5 @@ if __name__ == "__main__":
             out_path.write_text(report_md, encoding="utf-8")
         print(f"Report written to {out_path}")
 
-    asyncio.run(_run())
+    if not args.dry_run:
+        asyncio.run(_run())
