@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import argparse
 import asyncio
 import os
@@ -16,7 +15,7 @@ import mammoth  # type: ignore
 
 
 MEMBER_REPORT_REGEX = re.compile(r"^(?P<name>.+?)工作報告-(?P<date>\d{8})\.(?P<ext>docx|doc|md)$")
-TEAM_REPORT_HINT = "之工作報告"
+TEAM_REPORT_HINT = "工作報告匯總"
 
 
 @dataclass
@@ -145,14 +144,102 @@ def build_few_shot_examples(weeks: List[ExampleWeek]) -> str:
 def build_prompt(member_markdowns: List[str], examples_block: str) -> str:
     intro = (
         "You are an assistant that aggregates individual weekly engineering reports into a concise, well-structured department report. "
-        "Summarize achievements, ongoing work, issues/risks, metrics, and next week plan. Keep factual, merge duplicates, and preserve important numbers.\n"
+        "Summarize achievements, ongoing work. Keep factual, merge duplicates, and preserve important numbers.\n"
     )
-    instructions = (
-        "use chinese(zh-TW);"
-        "不需要保留組員名稱"
-        "組員報告中，項目列表清單(list)的最上級是專案名稱，依照專案來整理報告。"
-        "若組員報告的清單中出現 '以前完成:' 或 'done:'... 時，代表是很久以前完成的，忽視他的子項目。"
-        " '## Holding'標題底下的段落(paragraphs)代表被暫緩的工作項目，忽視整個段落。"
+    instruction = """依照組員的報告，並使用markdown格式來整理出部門報告。
+如果組員的報告有'## Holding'、'以前完成:'、'done:'等字眼，忽視這些段落或子項目。
+組員的報告中，會先用* 標示所屬專案，下一層用1.代表工作內容，再下一層用1.1 代表的是工作內容的子項目。
+一段超過30個字時，請縮減他並標註這段話經過縮減，例如: (經過縮減)。
+如果專案沒有在專案列表中，要在專案名稱前加上（新專案），例如:## （新項目）六軸機器人。
+不要把多項工作內容合併在同一行。
+
+以下是專案列表
+* 一機一手
+* EBONY 平台
+* iMotion-3dof
+* 螺絲案
+  * 得鑫 HMI
+  * 得鑫 PLC
+* 育成計畫
+* 其他
+* VRB
+* plc_tx7_cpu
+
+
+以下是組員報告的範例，只是讓你確定格式，請不要照著內容做彙整
+
+# 週報
+
+## Running
+
+* iMotion-3dof
+  1. Resymot GUI / codegg
+    1. 新增 gRPC web 功能與相關整合。
+  2. dart_resymot_client
+    1.以前完成:
+      1. 創建 lib 資料結構並實現。
+    2.進度:
+      2. 修正檔案命名錯誤，重構 lib 資料夾結構。
+  3. Resymot 客戶端Demo GUI 實現
+  4. Auto page 程式碼暫存功能
+  5. Auto page reset功能
+
+* TMDC 測試
+  1. 電流環測試
+  2. 位置環測試
+
+## Holding
+
+* 育成計畫
+  1. resymot專案編譯練習
+     1. done:
+        1. Kdl msvc release static lib編譯
+        2. xyz machine full demo
+     2. Kdl msvc release shared lib編譯(0%)
+  2. 專案修改練習
+     1. webots-gRPC新增getMaxVelocity功能(0%)
+
+
+以下是整理後的部門報告的參考，只是讓你確定格式，請不要照著內容做彙整
+
+# 軟體部-智能控制組 部門週報
+
+## iMotion-3dof
+
+* Resymot GUI / codegg
+    * 新增 gRPC web 功能與相關整合。
+* dart_resymot_client
+    * 修正檔案命名錯誤，重構 lib 資料夾結構。
+* Resymot 客戶端Demo GUI 實現
+* Auto page 程式碼暫存功能
+* Auto page reset功能
+
+## VRB 項目 pre-work
+
+* 在 IPC 上練習，把 Mosquitto 檔案放進 IPC，當作 MQTT Server。(20%)
+* 加入 Shell 自動化腳本，使開機時能和其他通訊一起執行。(20%)
+
+## 其他
+
+* pdf_signature
+    * 支援 docker 化部署，並整合 github action push 到 docker.io。
+* gen-report
+    * 建立 feat/util 分支。
+    * 用於週報自動整合。
+
+## (新項目)TMDC 測試
+
+* 電流環測試
+* 位置環測試
+
+"""
+
+    instructions2 = (
+        "把組員的報告整理成部門報告，使用chinese(zh-TW);"
+        "格式參考如下"
+        "組員報告中，項目列表清單(list)的最上級是專案名稱，依照專案來整理報告，被忽視的子項目或者段落都不用被整理。"
+        "若組員報告的清單中出現 '以前完成:' 或 'done:'... 時，忽視他的子項目。"
+        "標題會分成'## Running'與'## Holding'，只需要整理'## Running'的段落(paragraphs)，忽視'## Holding'的段落。"
         "不需要標註是已完成或進行中，組員會自行標註。只需要彙整組員的報告內容。"
         "保留組員報告內容中，項目間的縮排（縮排為2個半型空格)關係，最多可以用到3層縮排。"
         "不要用'、'去分隔許多工作內容，用換行或項目清單(list)的方式呈現。"
@@ -161,7 +248,7 @@ def build_prompt(member_markdowns: List[str], examples_block: str) -> str:
         f"<REPORT index={i}>\n{txt}\n</REPORT>" for i, txt in enumerate(member_markdowns, 1)
     )
     prompt = (
-        f"{intro}{instructions}\n"
+        f"{intro}{instruction}\n"
         + (f"\nFEW-SHOT EXAMPLES:\n{examples_block}\n" if examples_block else "")
         + f"\nTARGET INPUT:\n{input_block}\n\nGenerate the consolidated department weekly report in markdown now."
     )
